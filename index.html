@@ -164,14 +164,13 @@ let players=[], idleCount={}, rounds=[], scores=
 function startEntry(){
   let html='';
   for(let i=1;i<=+count.value;i++){
-    const saved=JSON.parse(localStorage.getItem('p'+i)||'{}');
     html+=`
       <div style="margin-bottom:10px;">
-        <input id="n${i}" value="${saved.name||''}" placeholder="Player ${i}">
+        <input id="n${i}" placeholder="Player ${i}">
         <select id="g${i}" style="margin-top:4px;">
           <option value="">Gender</option>
-          <option value="W" ${saved.gender==='W'?'selected':''}>Woman</option>
-          <option value="M" ${saved.gender==='M'?'selected':''}>Man</option>
+          <option value="W">Woman</option>
+          <option value="M">Man</option>
         </select>
       </div>`;
   }
