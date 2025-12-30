@@ -115,12 +115,11 @@ td:first-child,th:first-child{text-align:left;}
   <div class="title">Enter Players</div>
   <div id="entry"></div>
   <div class="action-row">
-    <button class="btn ghost" onclick="regenerate()">Update Fixtures</button>
     <button class="btn primary" onclick="savePlayers()">Generate Fixtures</button>
   </div>
 </div>
 
-<!-- Fixtures -->
+<!-- Fixtures summary -->
 <div class="card" id="fixturesCard" style="display:none;">
   <div class="title">Fixtures</div>
   <div id="fixtures"></div>
@@ -157,11 +156,8 @@ function startEntry(){
     const saved=JSON.parse(localStorage.getItem('p'+i)||'{}');
     html+=`
       <div style="margin-bottom:10px;">
-        <input id="n${i}" value="${saved.name||''}"
-          placeholder="Player ${i}"
-          oninput="autosave(${i})">
-        <select id="g${i}" style="margin-top:4px;"
-          onchange="autosave(${i})">
+        <input id="n${i}" value="${saved.name||''}" placeholder="Player ${i}">
+        <select id="g${i}" style="margin-top:4px;">
           <option value="">Gender</option>
           <option value="W" ${saved.gender==='W'?'selected':''}>Woman</option>
           <option value="M" ${saved.gender==='M'?'selected':''}>Man</option>
@@ -172,36 +168,19 @@ function startEntry(){
   entryCard.style.display='block';
 }
 
-function autosave(i){
-  const p={
-    id:i,
-    name:document.getElementById(`n${i}`).value,
-    gender:document.getElementById(`g${i}`).value
-  };
-  localStorage.setItem('p'+i,JSON.stringify(p));
-}
-
 function savePlayers(){
-  buildPlayers();
-  buildRounds();
-}
-
-function regenerate(){
-  scores={};
-  localStorage.removeItem('scores');
-  buildPlayers();
-  buildRounds();
-}
-
-function buildPlayers(){
   players=[]; idleCount={}; rounds=[];
   for(let i=1;i<=+count.value;i++){
-    const saved=JSON.parse(localStorage.getItem('p'+i)||'{}');
-    if(!saved.gender){alert('All genders required');return;}
-    players.push({id:i,name:saved.name||`Player ${i}`,gender:saved.gender});
-    idleCount[i]=0;
+    const g=document.getElementById(`g${i}`).value;
+    if(!g){alert('All genders required');return;}
+    const p={id:i,name:n(i).value||`Player ${i}`,gender:g};
+    players.push(p); idleCount[i]=0;
+    localStorage.setItem('p'+i,JSON.stringify(p));
   }
+  buildRounds();
 }
+
+function n(i){return document.getElementById(`n${i}`);}
 
 function buildRounds(){
   fixtures.innerHTML='';
@@ -216,6 +195,7 @@ function buildRounds(){
     const men=active.filter(p=>p.gender==='M');
     const women=active.filter(p=>p.gender==='W');
     let teams=[];
+
     for(let i=0;i<Math.min(men.length,women.length)&&teams.length<numCourts*2;i++)
       teams.push([women[i],men[i]]);
 
@@ -248,11 +228,9 @@ function showScoring(){
           vs
           (${r.teams[i+1][0].name}+${r.teams[i+1][1].name})
           <div class="score-row">
-            <input type="number" value="${s.a||''}"
-              onchange="saveScore('${key}','a',this.value)">
+            <input type="number" value="${s.a||''}" onchange="saveScore('${key}','a',this.value)">
             <span>:</span>
-            <input type="number" value="${s.b||''}"
-              onchange="saveScore('${key}','b',this.value)">
+            <input type="number" value="${s.b||''}" onchange="saveScore('${key}','b',this.value)">
           </div>
         </div>`;
     }
