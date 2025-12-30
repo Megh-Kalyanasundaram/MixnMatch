@@ -13,7 +13,7 @@
   --muted:#9aa6b4;
   --accent:#d4af37;
   --radius:10px;
-  --input-height:46px;
+  --input-height:44px;
 }
 *{box-sizing:border-box;}
 body{
@@ -43,7 +43,7 @@ label{font-size:12.5px;color:var(--muted);display:block;margin-bottom:6px;}
 input,select{
   width:100%;
   height:var(--input-height);
-  padding:0 12px;
+  padding:0 10px;
   border-radius:8px;
   border:1px solid rgba(255,255,255,0.12);
   background:rgba(255,255,255,0.05);
@@ -64,14 +64,19 @@ input,select{
 .action-row{display:flex;gap:10px;justify-content:flex-end;margin-top:12px;}
 
 .round{background:rgba(255,255,255,0.03);padding:12px;border-radius:8px;margin-top:12px;}
-.match{padding:6px 0;}
+.match{padding:6px 0;font-size:14.5px;}
 .idle{font-size:12.5px;color:var(--muted);margin-top:6px;font-style:italic;}
 
-.score{
-  font-size:13px;
+.score-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
   margin-top:4px;
 }
-.score label{display:inline;margin-right:12px;color:var(--card-text);}
+.score-row input{
+  width:64px;
+  text-align:center;
+}
 
 table{
   width:100%;
@@ -92,6 +97,7 @@ td:first-child,th:first-child{text-align:left;}
 <div class="banner">Mix n Match — Standalone</div>
 <div class="wrap">
 
+<!-- Setup -->
 <div class="card">
   <div class="title">Setup</div>
   <label>Courts</label>
@@ -104,22 +110,35 @@ td:first-child,th:first-child{text-align:left;}
   </div>
 </div>
 
+<!-- Entry -->
 <div class="card" id="entryCard" style="display:none;">
   <div class="title">Enter Players</div>
   <div id="entry"></div>
   <div class="action-row">
+    <button class="btn ghost" onclick="regenerate()">Update Fixtures</button>
     <button class="btn primary" onclick="savePlayers()">Generate Fixtures</button>
   </div>
 </div>
 
+<!-- Fixtures -->
 <div class="card" id="fixturesCard" style="display:none;">
-  <div class="title">Fixtures & Scoring</div>
+  <div class="title">Fixtures</div>
   <div id="fixtures"></div>
+  <div class="action-row">
+    <button class="btn ghost" onclick="showScoring()">Enter Scores</button>
+  </div>
+</div>
+
+<!-- Scoring -->
+<div class="card" id="scoringCard" style="display:none;">
+  <div class="title">Enter Scores</div>
+  <div id="scoring"></div>
   <div class="action-row">
     <button class="btn primary" onclick="summarize()">Generate Summary</button>
   </div>
 </div>
 
+<!-- Summary -->
 <div class="card" id="summaryCard" style="display:none;">
   <div class="title">Summary</div>
   <div id="summary"></div>
@@ -128,19 +147,21 @@ td:first-child,th:first-child{text-align:left;}
 </div>
 
 <script>
-let players=[], idleCount={}, results={};
-let savedScores = JSON.parse(localStorage.getItem('scores')||'{}'); // AUTOSAVE
 const ROUND_LIMIT=8;
+let players=[], idleCount={}, rounds=[], scores=
+  JSON.parse(localStorage.getItem('scores')||'{}');
 
 function startEntry(){
-  const n=+count.value;
   let html='';
-  for(let i=1;i<=n;i++){
+  for(let i=1;i<=+count.value;i++){
     const saved=JSON.parse(localStorage.getItem('p'+i)||'{}');
     html+=`
       <div style="margin-bottom:10px;">
-        <input id="n${i}" placeholder="Player ${i}" value="${saved.name||''}">
-        <select id="g${i}" style="margin-top:4px;">
+        <input id="n${i}" value="${saved.name||''}"
+          placeholder="Player ${i}"
+          oninput="autosave(${i})">
+        <select id="g${i}" style="margin-top:4px;"
+          onchange="autosave(${i})">
           <option value="">Gender</option>
           <option value="W" ${saved.gender==='W'?'selected':''}>Woman</option>
           <option value="M" ${saved.gender==='M'?'selected':''}>Man</option>
@@ -151,23 +172,40 @@ function startEntry(){
   entryCard.style.display='block';
 }
 
-function savePlayers(){
-  players=[]; idleCount={}; results={};
-  for(let i=1;i<=+count.value;i++){
-    const g=document.getElementById(`g${i}`).value;
-    if(!g){alert('All genders required');return;}
-    const p={id:i,name:document.getElementById(`n${i}`).value||`Player ${i}`,gender:g};
-    players.push(p);
-    idleCount[i]=0;
-    localStorage.setItem('p'+i,JSON.stringify(p));
-  }
-  generateRounds();
+function autosave(i){
+  const p={
+    id:i,
+    name:document.getElementById(`n${i}`).value,
+    gender:document.getElementById(`g${i}`).value
+  };
+  localStorage.setItem('p'+i,JSON.stringify(p));
 }
 
-function generateRounds(){
+function savePlayers(){
+  buildPlayers();
+  buildRounds();
+}
+
+function regenerate(){
+  scores={};
+  localStorage.removeItem('scores');
+  buildPlayers();
+  buildRounds();
+}
+
+function buildPlayers(){
+  players=[]; idleCount={}; rounds=[];
+  for(let i=1;i<=+count.value;i++){
+    const saved=JSON.parse(localStorage.getItem('p'+i)||'{}');
+    if(!saved.gender){alert('All genders required');return;}
+    players.push({id:i,name:saved.name||`Player ${i}`,gender:saved.gender});
+    idleCount[i]=0;
+  }
+}
+
+function buildRounds(){
   fixtures.innerHTML='';
-  const numCourts=+courts.value;
-  const activeCount=numCourts*4;
+  const numCourts=+courts.value, activeCount=numCourts*4;
 
   for(let r=1;r<=ROUND_LIMIT;r++){
     const sorted=[...players].sort((a,b)=>(idleCount[a.id]-idleCount[b.id])||a.id-b.id);
@@ -175,33 +213,21 @@ function generateRounds(){
     idle.forEach(p=>idleCount[p.id]++);
     const active=sorted.slice(players.length-activeCount);
 
-    let used=new Set(), teams=[];
     const men=active.filter(p=>p.gender==='M');
     const women=active.filter(p=>p.gender==='W');
-
-    for(let i=0;i<Math.min(men.length,women.length);i++){
-      if(teams.length>=numCourts*2) break;
+    let teams=[];
+    for(let i=0;i<Math.min(men.length,women.length)&&teams.length<numCourts*2;i++)
       teams.push([women[i],men[i]]);
-      used.add(women[i].id); used.add(men[i].id);
-    }
+
+    rounds.push({round:r,teams,idle});
 
     let html=`<div class="round"><strong>Round ${r}</strong>`;
     for(let i=0;i+1<teams.length;i+=2){
-      const key=`r${r}m${i}`;
-      const saved=savedScores[key];
-      html+=`
-        <div class="match">
-          (${teams[i][0].name}+${teams[i][1].name})
-          vs
-          (${teams[i+1][0].name}+${teams[i+1][1].name})
-          <div class="score">
-            <label><input type="radio" name="${key}" value="A" ${saved==='A'?'checked':''}
-              onchange="saveScore('${key}','A')"> Team A won</label>
-            <label><input type="radio" name="${key}" value="B" ${saved==='B'?'checked':''}
-              onchange="saveScore('${key}','B')"> Team B won</label>
-          </div>
-        </div>`;
-      results[key]={A:teams[i],B:teams[i+1],round:r};
+      html+=`<div class="match">
+        (${teams[i][0].name}+${teams[i][1].name})
+        vs
+        (${teams[i+1][0].name}+${teams[i+1][1].name})
+      </div>`;
     }
     html+=`<div class="idle">Idle: ${idle.map(p=>p.name).join(', ')}</div></div>`;
     fixtures.innerHTML+=html;
@@ -209,27 +235,58 @@ function generateRounds(){
   fixturesCard.style.display='block';
 }
 
-function saveScore(key,val){
-  savedScores[key]=val;
-  localStorage.setItem('scores',JSON.stringify(savedScores));
+function showScoring(){
+  scoring.innerHTML='';
+  rounds.forEach(r=>{
+    let html=`<div class="round"><strong>Round ${r.round}</strong>`;
+    for(let i=0;i+1<r.teams.length;i+=2){
+      const key=`r${r.round}m${i}`;
+      const s=scores[key]||{};
+      html+=`
+        <div class="match">
+          (${r.teams[i][0].name}+${r.teams[i][1].name})
+          vs
+          (${r.teams[i+1][0].name}+${r.teams[i+1][1].name})
+          <div class="score-row">
+            <input type="number" value="${s.a||''}"
+              onchange="saveScore('${key}','a',this.value)">
+            <span>:</span>
+            <input type="number" value="${s.b||''}"
+              onchange="saveScore('${key}','b',this.value)">
+          </div>
+        </div>`;
+    }
+    html+='</div>';
+    scoring.innerHTML+=html;
+  });
+  scoringCard.style.display='block';
+}
+
+function saveScore(k,side,val){
+  scores[k]=scores[k]||{};
+  scores[k][side]=+val;
+  localStorage.setItem('scores',JSON.stringify(scores));
 }
 
 function summarize(){
   let stats={};
   players.forEach(p=>stats[p.id]={p,Played:0,Idled:idleCount[p.id],Won:0,R:{}});
 
-  Object.entries(savedScores).forEach(([k,v])=>{
-    const res=results[k];
-    if(!res) return;
-    const win=res[v], lose=res[v==='A'?'B':'A'];
-    win.forEach(p=>{stats[p.id].Won++;stats[p.id].Played++;stats[p.id].R[res.round]='W';});
-    lose.forEach(p=>{stats[p.id].Played++;stats[p.id].R[res.round]='L';});
+  rounds.forEach(r=>{
+    r.teams.forEach((t,i)=>{
+      if(i%2) return;
+      const k=`r${r.round}m${i}`, s=scores[k];
+      if(!s||s.a==null||s.b==null) return;
+      const A=t, B=r.teams[i+1];
+      const win=s.a>s.b?A:B, lose=s.a>s.b?B:A;
+      win.forEach(p=>{stats[p.id].Won++;stats[p.id].Played++;stats[p.id].R[r.round]='W';});
+      lose.forEach(p=>{stats[p.id].Played++;stats[p.id].R[r.round]='L';});
+    });
   });
 
   players.forEach(p=>{
-    for(let r=1;r<=ROUND_LIMIT;r++){
+    for(let r=1;r<=ROUND_LIMIT;r++)
       if(!stats[p.id].R[r]) stats[p.id].R[r]='–';
-    }
   });
 
   const ordered=[...players].sort((a,b)=>
