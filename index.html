@@ -3,187 +3,262 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Mix-n-Match Pickleball Scheduler</title>
+<title>Mix n Match — Smoke Test (v7 Correct Idle Rotation)</title>
 
 <style>
 :root{
-  --page-bg:#0c2330;
+  --page-bg:#f5f6f7;
   --card-bg:#0f2435;
-  --gold:#d4af37;
-  --gold-hover:#e5c157;
+  --card-text:#e7f3ff;
   --muted:#9aa6b4;
-  --text:#e7f3ff;
-  --white:#ffffff;
+  --accent:#d4af37;
   --radius:10px;
-  --shadow:0 8px 24px rgba(2,8,25,0.15);
-  --input-h:42px;
+  --input-height:48px;
 }
-
-*{box-sizing:border-box;}
-html,body{
+*,*::before,*::after{box-sizing:border-box;}
+body{
   margin:0;
-  font-family:Inter,Segoe UI,Arial,sans-serif;
+  font-family:Inter,system-ui,-apple-system,Arial,sans-serif;
   background:var(--page-bg);
-  color:var(--text);
 }
-
-.container{
-  max-width:420px;
-  margin:20px auto;
-  padding:0 14px;
+.banner{
+  position:fixed;top:0;left:0;right:0;height:46px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--card-bg);color:var(--card-text);
+  font-weight:700;font-size:13px;
 }
+body{padding-top:46px;}
+.wrap{max-width:1100px;margin:0 auto;padding:12px 16px;}
 
 .card{
   background:var(--card-bg);
+  color:var(--card-text);
   border-radius:var(--radius);
   padding:16px;
-  box-shadow:var(--shadow);
-}
-
-h2{
-  margin:0 0 12px;
-  font-size:18px;
-  font-weight:600;
-}
-
-.label{
-  font-size:13px;
-  color:var(--muted);
-  margin-bottom:4px;
-}
-
-input, select{
-  width:100%;
-  height:var(--input-h);
-  border-radius:8px;
-  border:1px solid rgba(255,255,255,0.12);
-  background:#132e44;
-  color:var(--text);
-  padding:0 12px;
-  font-size:15px;
-}
-
-.row{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
   margin-bottom:12px;
 }
 
-button{
-  height:44px;
-  border-radius:10px;
+.title{
+  font-weight:700;
+  margin-bottom:12px;
+  font-size:15px;
+}
+
+label{
+  font-size:12.5px;
+  color:var(--muted);
+  display:block;
+  margin-bottom:6px;
+}
+
+input,select{
+  width:100%;
+  height:var(--input-height);
+  padding:0 12px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.12);
+  background:rgba(255,255,255,0.05);
+  color:var(--card-text);
+}
+
+select option{background:#fff;color:#102238;}
+
+.btn{
+  height:var(--input-height);
+  padding:0 16px;
+  border-radius:8px;
+  font-weight:700;
   border:none;
-  font-size:16px;
-  font-weight:600;
   cursor:pointer;
 }
 
-.primary{
-  background:var(--gold);
-  color:#102238;
-}
-.primary:hover{background:var(--gold-hover);}
-
-.secondary{
-  background:#132e44;
-  color:var(--text);
-  border:1px solid rgba(255,255,255,0.15);
+.btn.primary{background:var(--accent);color:#102238;}
+.btn.ghost{
+  background:transparent;
+  color:var(--card-text);
+  border:1px solid rgba(255,255,255,0.12);
 }
 
-.list{
-  margin-top:14px;
+.action-row{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  margin-top:12px;
+}
+
+/* Fixtures UI refinements */
+
+.round{
+  background:rgba(255,255,255,0.03);
+  padding:12px;
+  border-radius:8px;
+  margin-top:12px;
+}
+
+.round strong{
+  display:block;
   font-size:14px;
+  margin-bottom:6px;
 }
 
 .match{
-  padding:8px 0;
-  border-bottom:1px solid rgba(255,255,255,0.08);
+  padding:6px 0;
+  font-size:14.5px;
+}
+
+.match + .match{
+  border-top:1px dashed rgba(255,255,255,0.08);
+}
+
+.idle{
+  margin-top:8px;
+  font-size:12.5px;
+  color:var(--muted);
+  font-style:italic;
 }
 </style>
 </head>
 
 <body>
-<div class="container">
+<div class="banner">Mix n Match — Smoke Test (v7)</div>
 
-  <div class="card">
-    <h2>Mix-n-Match Setup</h2>
+<div class="wrap">
 
-    <div class="row">
-      <div>
-        <div class="label">Women Players</div>
-        <input type="number" id="women" value="4" min="2">
-      </div>
-      <div>
-        <div class="label">Men Players</div>
-        <input type="number" id="men" value="4" min="2">
-      </div>
-    </div>
+<div class="card">
+  <div class="title">Setup</div>
+  <label>Number of Courts</label>
+  <input id="courts" type="number" min="1" value="2">
 
-    <div class="row">
-      <div>
-        <div class="label">Courts</div>
-        <input type="number" id="courts" value="2" min="1">
-      </div>
-      <div>
-        <div class="label">Rounds</div>
-        <input type="number" id="rounds" value="4" min="1">
-      </div>
-    </div>
+  <label style="margin-top:8px;">Total No. of Players</label>
+  <input id="count" type="number" min="4" value="12">
 
-    <button class="primary" onclick="generate()">Generate Mix-n-Match</button>
+  <div class="action-row">
+    <button class="btn primary" onclick="startEntry()">Next: Enter Players</button>
+    <button class="btn ghost" onclick="location.reload()">Reset</button>
   </div>
+</div>
 
-  <div class="card" style="margin-top:16px;">
-    <h2>Schedule</h2>
-    <div id="output" class="list"></div>
+<div class="card" id="entryCard" style="display:none;">
+  <div class="title">Enter Players</div>
+  <div id="entry"></div>
+  <div class="action-row">
+    <button class="btn primary" onclick="savePlayers()">Generate Fixtures</button>
   </div>
+</div>
+
+<div class="card" id="fixturesCard" style="display:none;">
+  <div class="title">Fixtures</div>
+  <div id="fixtures"></div>
+</div>
 
 </div>
 
 <script>
-function generate(){
-  const W = parseInt(women.value);
-  const M = parseInt(men.value);
-  const rounds = parseInt(document.getElementById("rounds").value);
+let players=[], pairHistory={}, idleCount={};
+const ROUND_LIMIT = 8;
 
-  const womenPlayers = [...Array(W)].map((_,i)=>"W"+(i+1));
-  const menPlayers   = [...Array(M)].map((_,i)=>"M"+(i+1));
+function startEntry(){
+  const n=+count.value;
+  let html='';
+  for(let i=1;i<=n;i++){
+    html+=`
+      <div style="margin-bottom:10px;">
+        <input id="n${i}" placeholder="Player ${i}">
+        <select id="g${i}" style="margin-top:4px;">
+          <option value="" selected>Gender</option>
+          <option value="W">Woman</option>
+          <option value="M">Man</option>
+        </select>
+      </div>`;
+  }
+  entry.innerHTML=html;
+  entryCard.style.display='block';
+}
 
-  let out = "";
-  let wIdx = 0, mIdx = 0;
+function savePlayers(){
+  players=[]; pairHistory={}; idleCount={};
+  for(let i=1;i<=+count.value;i++){
+    const g=document.getElementById(`g${i}`).value;
+    if(!g){alert('All genders required');return;}
+    players.push({
+      id:i,
+      name:document.getElementById(`n${i}`).value||`Player ${i}`,
+      gender:g
+    });
+    idleCount[i]=0;
+  }
+  generateRounds();
+}
 
-  for(let r=1;r<=rounds;r++){
-    out += `<div class="match"><b>Round ${r}</b></div>`;
+function pairKey(a,b){
+  return [a.id,b.id].sort().join('-');
+}
 
-    // Mixed Doubles first
-    const teamA = [
-      womenPlayers[wIdx % W],
-      menPlayers[mIdx % M]
-    ];
-    const teamB = [
-      womenPlayers[(wIdx+1) % W],
-      menPlayers[(mIdx+1) % M]
-    ];
+function generateRounds(){
+  fixtures.innerHTML='';
+  const numCourts=+courts.value;
+  const activeCount=numCourts*4;
 
-    out += `<div class="match">
-      ${teamA.join(" + ")} vs ${teamB.join(" + ")}
-    </div>`;
+  for(let round=1; round<=ROUND_LIMIT; round++){
+    let used=new Set(), teams=[];
+    let html=`<div class="round"><strong>Round ${round}</strong>`;
 
-    wIdx += 2;
-    mIdx += 2;
+    const sorted=[...players].sort((a,b)=>
+      (idleCount[a.id]-idleCount[b.id]) || (a.id-b.id)
+    );
+    const idle=sorted.slice(0, players.length-activeCount);
+    idle.forEach(p=>idleCount[p.id]++);
+    const active=sorted.slice(players.length-activeCount);
 
-    // Same-gender rotation (idle balancing)
-    if(W > 4){
-      out += `<div class="match">Women rotation game</div>`;
-    } else if(M > 4){
-      out += `<div class="match">Men rotation game</div>`;
+    const men=active.filter(p=>p.gender==='M');
+    const women=active.filter(p=>p.gender==='W');
+
+    let mwPairs=[];
+    men.forEach(m=>{
+      women.forEach(w=>{
+        const k=pairKey(m,w);
+        mwPairs.push({m,w,used:pairHistory[k]||0});
+      });
+    });
+    mwPairs.sort((a,b)=>a.used-b.used);
+
+    for(const p of mwPairs){
+      if(used.has(p.m.id)||used.has(p.w.id)) continue;
+      teams.push({type:'MW',a:p.m,b:p.w});
+      used.add(p.m.id); used.add(p.w.id);
+      pairHistory[pairKey(p.m,p.w)]=(pairHistory[pairKey(p.m,p.w)]||0)+1;
+      if(teams.length===numCourts*2) break;
     }
+
+    const freeW=women.filter(w=>!used.has(w.id));
+    for(let i=0;i+1<freeW.length && teams.length<numCourts*2;i+=2){
+      teams.push({type:'WW',a:freeW[i],b:freeW[i+1]});
+      used.add(freeW[i].id); used.add(freeW[i+1].id);
+    }
+
+    const freeM=men.filter(m=>!used.has(m.id));
+    for(let i=0;i+1<freeM.length && teams.length<numCourts*2;i+=2){
+      teams.push({type:'MM',a:freeM[i],b:freeM[i+1]});
+      used.add(freeM[i].id); used.add(freeM[i+1].id);
+    }
+
+    for(let i=0;i+1<teams.length;i+=2){
+      if(teams[i].type===teams[i+1].type){
+        html+=`<div class="match">
+          (${teams[i].a.name} + ${teams[i].b.name})
+          vs
+          (${teams[i+1].a.name} + ${teams[i+1].b.name})
+        </div>`;
+      }
+    }
+
+    html+=`<div class="idle">Idle: ${idle.map(p=>p.name).join(', ')}</div>`;
+    html+='</div>';
+    fixtures.innerHTML+=html;
   }
 
-  output.innerHTML = out;
+  fixturesCard.style.display='block';
 }
 </script>
-
 </body>
 </html>
