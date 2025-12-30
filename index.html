@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Mix n Match — Smoke Test (v7 Correct Idle Rotation)</title>
+<title>Mix n Match — Standalone</title>
 
 <style>
 :root{
@@ -13,12 +13,12 @@
   --muted:#9aa6b4;
   --accent:#d4af37;
   --radius:10px;
-  --input-height:48px;
+  --input-height:46px;
 }
-*,*::before,*::after{box-sizing:border-box;}
+*{box-sizing:border-box;}
 body{
   margin:0;
-  font-family:Inter,system-ui,-apple-system,Arial,sans-serif;
+  font-family:Inter,system-ui,Arial,sans-serif;
   background:var(--page-bg);
 }
 .banner{
@@ -37,19 +37,8 @@ body{padding-top:46px;}
   padding:16px;
   margin-bottom:12px;
 }
-
-.title{
-  font-weight:700;
-  margin-bottom:12px;
-  font-size:15px;
-}
-
-label{
-  font-size:12.5px;
-  color:var(--muted);
-  display:block;
-  margin-bottom:6px;
-}
+.title{font-weight:700;margin-bottom:12px;}
+label{font-size:12.5px;color:var(--muted);display:block;margin-bottom:6px;}
 
 input,select{
   width:100%;
@@ -61,8 +50,6 @@ input,select{
   color:var(--card-text);
 }
 
-select option{background:#fff;color:#102238;}
-
 .btn{
   height:var(--input-height);
   padding:0 16px;
@@ -71,69 +58,48 @@ select option{background:#fff;color:#102238;}
   border:none;
   cursor:pointer;
 }
-
 .btn.primary{background:var(--accent);color:#102238;}
-.btn.ghost{
-  background:transparent;
-  color:var(--card-text);
-  border:1px solid rgba(255,255,255,0.12);
-}
+.btn.ghost{background:transparent;color:var(--card-text);border:1px solid rgba(255,255,255,0.12);}
 
-.action-row{
-  display:flex;
-  gap:10px;
-  justify-content:flex-end;
-  margin-top:12px;
-}
+.action-row{display:flex;gap:10px;justify-content:flex-end;margin-top:12px;}
 
-/* Fixtures UI refinements */
+.round{background:rgba(255,255,255,0.03);padding:12px;border-radius:8px;margin-top:12px;}
+.match{padding:6px 0;}
+.idle{font-size:12.5px;color:var(--muted);margin-top:6px;font-style:italic;}
 
-.round{
-  background:rgba(255,255,255,0.03);
-  padding:12px;
-  border-radius:8px;
-  margin-top:12px;
+.score{
+  font-size:13px;
+  margin-top:4px;
 }
+.score label{display:inline;margin-right:12px;color:var(--card-text);}
 
-.round strong{
-  display:block;
-  font-size:14px;
-  margin-bottom:6px;
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
 }
-
-.match{
-  padding:6px 0;
-  font-size:14.5px;
+th,td{
+  border-bottom:1px solid rgba(255,255,255,0.08);
+  padding:6px;
+  text-align:center;
 }
-
-.match + .match{
-  border-top:1px dashed rgba(255,255,255,0.08);
-}
-
-.idle{
-  margin-top:8px;
-  font-size:12.5px;
-  color:var(--muted);
-  font-style:italic;
-}
+th{color:var(--muted);font-weight:600;}
+td:first-child,th:first-child{text-align:left;}
 </style>
 </head>
 
 <body>
-<div class="banner">Mix n Match — Smoke Test (v7)</div>
-
+<div class="banner">Mix n Match — Standalone</div>
 <div class="wrap">
 
 <div class="card">
   <div class="title">Setup</div>
-  <label>Number of Courts</label>
+  <label>Courts</label>
   <input id="courts" type="number" min="1" value="2">
-
-  <label style="margin-top:8px;">Total No. of Players</label>
+  <label style="margin-top:8px;">Total Players</label>
   <input id="count" type="number" min="4" value="12">
-
   <div class="action-row">
-    <button class="btn primary" onclick="startEntry()">Next: Enter Players</button>
+    <button class="btn primary" onclick="startEntry()">Next</button>
     <button class="btn ghost" onclick="location.reload()">Reset</button>
   </div>
 </div>
@@ -147,27 +113,37 @@ select option{background:#fff;color:#102238;}
 </div>
 
 <div class="card" id="fixturesCard" style="display:none;">
-  <div class="title">Fixtures</div>
+  <div class="title">Fixtures & Scoring</div>
   <div id="fixtures"></div>
+  <div class="action-row">
+    <button class="btn primary" onclick="summarize()">Generate Summary</button>
+  </div>
+</div>
+
+<div class="card" id="summaryCard" style="display:none;">
+  <div class="title">Summary</div>
+  <div id="summary"></div>
 </div>
 
 </div>
 
 <script>
-let players=[], pairHistory={}, idleCount={};
-const ROUND_LIMIT = 8;
+let players=[], idleCount={}, results={};
+let savedScores = JSON.parse(localStorage.getItem('scores')||'{}'); // AUTOSAVE
+const ROUND_LIMIT=8;
 
 function startEntry(){
   const n=+count.value;
   let html='';
   for(let i=1;i<=n;i++){
+    const saved=JSON.parse(localStorage.getItem('p'+i)||'{}');
     html+=`
       <div style="margin-bottom:10px;">
-        <input id="n${i}" placeholder="Player ${i}">
+        <input id="n${i}" placeholder="Player ${i}" value="${saved.name||''}">
         <select id="g${i}" style="margin-top:4px;">
-          <option value="" selected>Gender</option>
-          <option value="W">Woman</option>
-          <option value="M">Man</option>
+          <option value="">Gender</option>
+          <option value="W" ${saved.gender==='W'?'selected':''}>Woman</option>
+          <option value="M" ${saved.gender==='M'?'selected':''}>Man</option>
         </select>
       </div>`;
   }
@@ -176,22 +152,16 @@ function startEntry(){
 }
 
 function savePlayers(){
-  players=[]; pairHistory={}; idleCount={};
+  players=[]; idleCount={}; results={};
   for(let i=1;i<=+count.value;i++){
     const g=document.getElementById(`g${i}`).value;
     if(!g){alert('All genders required');return;}
-    players.push({
-      id:i,
-      name:document.getElementById(`n${i}`).value||`Player ${i}`,
-      gender:g
-    });
+    const p={id:i,name:document.getElementById(`n${i}`).value||`Player ${i}`,gender:g};
+    players.push(p);
     idleCount[i]=0;
+    localStorage.setItem('p'+i,JSON.stringify(p));
   }
   generateRounds();
-}
-
-function pairKey(a,b){
-  return [a.id,b.id].sort().join('-');
 }
 
 function generateRounds(){
@@ -199,65 +169,86 @@ function generateRounds(){
   const numCourts=+courts.value;
   const activeCount=numCourts*4;
 
-  for(let round=1; round<=ROUND_LIMIT; round++){
-    let used=new Set(), teams=[];
-    let html=`<div class="round"><strong>Round ${round}</strong>`;
-
-    const sorted=[...players].sort((a,b)=>
-      (idleCount[a.id]-idleCount[b.id]) || (a.id-b.id)
-    );
-    const idle=sorted.slice(0, players.length-activeCount);
+  for(let r=1;r<=ROUND_LIMIT;r++){
+    const sorted=[...players].sort((a,b)=>(idleCount[a.id]-idleCount[b.id])||a.id-b.id);
+    const idle=sorted.slice(0,players.length-activeCount);
     idle.forEach(p=>idleCount[p.id]++);
     const active=sorted.slice(players.length-activeCount);
 
+    let used=new Set(), teams=[];
     const men=active.filter(p=>p.gender==='M');
     const women=active.filter(p=>p.gender==='W');
 
-    let mwPairs=[];
-    men.forEach(m=>{
-      women.forEach(w=>{
-        const k=pairKey(m,w);
-        mwPairs.push({m,w,used:pairHistory[k]||0});
-      });
-    });
-    mwPairs.sort((a,b)=>a.used-b.used);
-
-    for(const p of mwPairs){
-      if(used.has(p.m.id)||used.has(p.w.id)) continue;
-      teams.push({type:'MW',a:p.m,b:p.w});
-      used.add(p.m.id); used.add(p.w.id);
-      pairHistory[pairKey(p.m,p.w)]=(pairHistory[pairKey(p.m,p.w)]||0)+1;
-      if(teams.length===numCourts*2) break;
+    for(let i=0;i<Math.min(men.length,women.length);i++){
+      if(teams.length>=numCourts*2) break;
+      teams.push([women[i],men[i]]);
+      used.add(women[i].id); used.add(men[i].id);
     }
 
-    const freeW=women.filter(w=>!used.has(w.id));
-    for(let i=0;i+1<freeW.length && teams.length<numCourts*2;i+=2){
-      teams.push({type:'WW',a:freeW[i],b:freeW[i+1]});
-      used.add(freeW[i].id); used.add(freeW[i+1].id);
-    }
-
-    const freeM=men.filter(m=>!used.has(m.id));
-    for(let i=0;i+1<freeM.length && teams.length<numCourts*2;i+=2){
-      teams.push({type:'MM',a:freeM[i],b:freeM[i+1]});
-      used.add(freeM[i].id); used.add(freeM[i+1].id);
-    }
-
+    let html=`<div class="round"><strong>Round ${r}</strong>`;
     for(let i=0;i+1<teams.length;i+=2){
-      if(teams[i].type===teams[i+1].type){
-        html+=`<div class="match">
-          (${teams[i].a.name} + ${teams[i].b.name})
+      const key=`r${r}m${i}`;
+      const saved=savedScores[key];
+      html+=`
+        <div class="match">
+          (${teams[i][0].name}+${teams[i][1].name})
           vs
-          (${teams[i+1].a.name} + ${teams[i+1].b.name})
+          (${teams[i+1][0].name}+${teams[i+1][1].name})
+          <div class="score">
+            <label><input type="radio" name="${key}" value="A" ${saved==='A'?'checked':''}
+              onchange="saveScore('${key}','A')"> Team A won</label>
+            <label><input type="radio" name="${key}" value="B" ${saved==='B'?'checked':''}
+              onchange="saveScore('${key}','B')"> Team B won</label>
+          </div>
         </div>`;
-      }
+      results[key]={A:teams[i],B:teams[i+1],round:r};
     }
-
-    html+=`<div class="idle">Idle: ${idle.map(p=>p.name).join(', ')}</div>`;
-    html+='</div>';
+    html+=`<div class="idle">Idle: ${idle.map(p=>p.name).join(', ')}</div></div>`;
     fixtures.innerHTML+=html;
   }
-
   fixturesCard.style.display='block';
+}
+
+function saveScore(key,val){
+  savedScores[key]=val;
+  localStorage.setItem('scores',JSON.stringify(savedScores));
+}
+
+function summarize(){
+  let stats={};
+  players.forEach(p=>stats[p.id]={p,Played:0,Idled:idleCount[p.id],Won:0,R:{}});
+
+  Object.entries(savedScores).forEach(([k,v])=>{
+    const res=results[k];
+    if(!res) return;
+    const win=res[v], lose=res[v==='A'?'B':'A'];
+    win.forEach(p=>{stats[p.id].Won++;stats[p.id].Played++;stats[p.id].R[res.round]='W';});
+    lose.forEach(p=>{stats[p.id].Played++;stats[p.id].R[res.round]='L';});
+  });
+
+  players.forEach(p=>{
+    for(let r=1;r<=ROUND_LIMIT;r++){
+      if(!stats[p.id].R[r]) stats[p.id].R[r]='–';
+    }
+  });
+
+  const ordered=[...players].sort((a,b)=>
+    a.gender===b.gender ? a.name.localeCompare(b.name) : a.gender==='W'?-1:1
+  );
+
+  let html='<table><tr><th>Player</th><th>Played</th><th>Idled</th><th>Won</th>';
+  for(let r=1;r<=ROUND_LIMIT;r++) html+=`<th>R${r}</th>`;
+  html+='</tr>';
+
+  ordered.forEach(p=>{
+    const s=stats[p.id];
+    html+=`<tr><td>${p.name}</td><td>${s.Played}</td><td>${s.Idled}</td><td>${s.Won}</td>`;
+    for(let r=1;r<=ROUND_LIMIT;r++) html+=`<td>${s.R[r]}</td>`;
+    html+='</tr>';
+  });
+
+  summary.innerHTML=html;
+  summaryCard.style.display='block';
 }
 </script>
 </body>
