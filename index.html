@@ -1,223 +1,187 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mix n Match Pickleball Scheduler</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mix-n-Match Pickleball Scheduler</title>
 
 <style>
-  body{
-    font-family: Inter, Segoe UI, Arial, sans-serif;
-    background:#f5f6f7;
-    margin:0;
-    padding:20px;
-  }
-  h1{margin-top:0}
-  .card{
-    background:#0f2435;
-    color:#e7f3ff;
-    border-radius:10px;
-    padding:16px;
-    margin-bottom:16px;
-    box-shadow:0 6px 18px rgba(0,0,0,.15);
-  }
-  input, select, button{
-    height:36px;
-    border-radius:6px;
-    border:1px solid #ccc;
-    padding:0 10px;
-    font-size:14px;
-  }
-  button{
-    background:#d4af37;
-    border:none;
-    cursor:pointer;
-  }
-  button:hover{background:#e5c157}
-  table{
-    width:100%;
-    border-collapse:collapse;
-    margin-top:10px;
-  }
-  th,td{
-    padding:8px;
-    border-bottom:1px solid #334b63;
-    text-align:center;
-  }
-  th{color:#d4af37}
-  .row{
-    display:flex;
-    gap:8px;
-    margin-bottom:8px;
-  }
-  .row > *{flex:1}
+:root{
+  --page-bg:#0c2330;
+  --card-bg:#0f2435;
+  --gold:#d4af37;
+  --gold-hover:#e5c157;
+  --muted:#9aa6b4;
+  --text:#e7f3ff;
+  --white:#ffffff;
+  --radius:10px;
+  --shadow:0 8px 24px rgba(2,8,25,0.15);
+  --input-h:42px;
+}
+
+*{box-sizing:border-box;}
+html,body{
+  margin:0;
+  font-family:Inter,Segoe UI,Arial,sans-serif;
+  background:var(--page-bg);
+  color:var(--text);
+}
+
+.container{
+  max-width:420px;
+  margin:20px auto;
+  padding:0 14px;
+}
+
+.card{
+  background:var(--card-bg);
+  border-radius:var(--radius);
+  padding:16px;
+  box-shadow:var(--shadow);
+}
+
+h2{
+  margin:0 0 12px;
+  font-size:18px;
+  font-weight:600;
+}
+
+.label{
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:4px;
+}
+
+input, select{
+  width:100%;
+  height:var(--input-h);
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.12);
+  background:#132e44;
+  color:var(--text);
+  padding:0 12px;
+  font-size:15px;
+}
+
+.row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-bottom:12px;
+}
+
+button{
+  height:44px;
+  border-radius:10px;
+  border:none;
+  font-size:16px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.primary{
+  background:var(--gold);
+  color:#102238;
+}
+.primary:hover{background:var(--gold-hover);}
+
+.secondary{
+  background:#132e44;
+  color:var(--text);
+  border:1px solid rgba(255,255,255,0.15);
+}
+
+.list{
+  margin-top:14px;
+  font-size:14px;
+}
+
+.match{
+  padding:8px 0;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
 </style>
 </head>
 
 <body>
+<div class="container">
 
-<h1>Mix n Match Pickleball</h1>
+  <div class="card">
+    <h2>Mix-n-Match Setup</h2>
 
-<div class="card">
-  <h3>Add Players</h3>
-  <div class="row">
-    <input id="pname" placeholder="Player name">
-    <select id="pgender">
-      <option value="W">Woman</option>
-      <option value="M">Man</option>
-    </select>
-    <button onclick="addPlayer()">Add</button>
+    <div class="row">
+      <div>
+        <div class="label">Women Players</div>
+        <input type="number" id="women" value="4" min="2">
+      </div>
+      <div>
+        <div class="label">Men Players</div>
+        <input type="number" id="men" value="4" min="2">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <div class="label">Courts</div>
+        <input type="number" id="courts" value="2" min="1">
+      </div>
+      <div>
+        <div class="label">Rounds</div>
+        <input type="number" id="rounds" value="4" min="1">
+      </div>
+    </div>
+
+    <button class="primary" onclick="generate()">Generate Mix-n-Match</button>
   </div>
-  <div id="playerList"></div>
-</div>
 
-<div class="card">
-  <h3>Generate Rounds</h3>
-  <button onclick="generateRounds()">Generate Mix n Match Fixtures</button>
-  <div id="fixtures"></div>
-</div>
+  <div class="card" style="margin-top:16px;">
+    <h2>Schedule</h2>
+    <div id="output" class="list"></div>
+  </div>
 
-<div class="card">
-  <h3>Rankings</h3>
-  <table id="rankTable">
-    <thead>
-      <tr>
-        <th>Player</th>
-        <th>Points</th>
-        <th>Wins</th>
-        <th>PF</th>
-        <th>PA</th>
-        <th>Diff</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
 </div>
 
 <script>
-let players=[];
-let rounds=[];
-let stats={};
+function generate(){
+  const W = parseInt(women.value);
+  const M = parseInt(men.value);
+  const rounds = parseInt(document.getElementById("rounds").value);
 
-function addPlayer(){
-  const name=pname.value.trim();
-  if(!name) return;
-  players.push({name, gender:pgender.value});
-  pname.value="";
-  renderPlayers();
-}
+  const womenPlayers = [...Array(W)].map((_,i)=>"W"+(i+1));
+  const menPlayers   = [...Array(M)].map((_,i)=>"M"+(i+1));
 
-function renderPlayers(){
-  playerList.innerHTML=players.map(p=>`${p.name} (${p.gender})`).join("<br>");
-}
+  let out = "";
+  let wIdx = 0, mIdx = 0;
 
-function generateRounds(){
-  if(players.length<4){alert("Minimum 4 players");return;}
-  rounds=[];
-  stats={};
-  players.forEach(p=>{
-    stats[p.name]={pts:0,w:0,pf:0,pa:0};
-  });
+  for(let r=1;r<=rounds;r++){
+    out += `<div class="match"><b>Round ${r}</b></div>`;
 
-  let men=players.filter(p=>p.gender==="M");
-  let women=players.filter(p=>p.gender==="W");
+    // Mixed Doubles first
+    const teamA = [
+      womenPlayers[wIdx % W],
+      menPlayers[mIdx % M]
+    ];
+    const teamB = [
+      womenPlayers[(wIdx+1) % W],
+      menPlayers[(mIdx+1) % M]
+    ];
 
-  let usedPairs=new Set();
-  let available=[...players];
+    out += `<div class="match">
+      ${teamA.join(" + ")} vs ${teamB.join(" + ")}
+    </div>`;
 
-  while(available.length>=4){
-    let pair1=null, pair2=null;
+    wIdx += 2;
+    mIdx += 2;
 
-    // MW-first
-    for(let m of men){
-      for(let w of women){
-        let key=[m.name,w.name].sort().join("-");
-        if(!usedPairs.has(key)){
-          pair1=[m,w];
-          break;
-        }
-      }
-      if(pair1) break;
+    // Same-gender rotation (idle balancing)
+    if(W > 4){
+      out += `<div class="match">Women rotation game</div>`;
+    } else if(M > 4){
+      out += `<div class="match">Men rotation game</div>`;
     }
-
-    if(!pair1){
-      pair1=[available[0],available[1]];
-    }
-
-    usedPairs.add(pair1.map(p=>p.name).sort().join("-"));
-    available=available.filter(p=>!pair1.includes(p));
-
-    pair2=[available[0],available[1]];
-    usedPairs.add(pair2.map(p=>p.name).sort().join("-"));
-    available=available.filter(p=>!pair2.includes(p));
-
-    rounds.push({pair1,pair2});
   }
 
-  renderFixtures();
-}
-
-function renderFixtures(){
-  fixtures.innerHTML="";
-  rounds.forEach((r,i)=>{
-    const div=document.createElement("div");
-    div.innerHTML=`
-      <strong>Match ${i+1}</strong><br>
-      ${r.pair1[0].name} & ${r.pair1[1].name}
-      vs
-      ${r.pair2[0].name} & ${r.pair2[1].name}<br>
-      <input type="number" placeholder="Score A" id="a${i}">
-      <input type="number" placeholder="Score B" id="b${i}">
-      <button onclick="saveResult(${i})">Save</button>
-      <hr>
-    `;
-    fixtures.appendChild(div);
-  });
-}
-
-function saveResult(i){
-  const a=+document.getElementById("a"+i).value;
-  const b=+document.getElementById("b"+i).value;
-  if(isNaN(a)||isNaN(b)) return;
-
-  const r=rounds[i];
-  r.pair1.forEach(p=>{
-    stats[p.name].pf+=a;
-    stats[p.name].pa+=b;
-  });
-  r.pair2.forEach(p=>{
-    stats[p.name].pf+=b;
-    stats[p.name].pa+=a;
-  });
-
-  if(a>b){
-    r.pair1.forEach(p=>{stats[p.name].pts++;stats[p.name].w++;});
-  }else{
-    r.pair2.forEach(p=>{stats[p.name].pts++;stats[p.name].w++;});
-  }
-
-  renderRankings();
-}
-
-function renderRankings(){
-  const rows=Object.entries(stats)
-    .map(([name,s])=>({...s,name,diff:s.pf-s.pa}))
-    .sort((a,b)=>
-      b.pts-a.pts ||
-      b.w-a.w ||
-      b.diff-a.diff
-    );
-
-  rankTable.querySelector("tbody").innerHTML=
-    rows.map(r=>`
-      <tr>
-        <td>${r.name}</td>
-        <td>${r.pts}</td>
-        <td>${r.w}</td>
-        <td>${r.pf}</td>
-        <td>${r.pa}</td>
-        <td>${r.diff}</td>
-      </tr>`).join("");
+  output.innerHTML = out;
 }
 </script>
 
